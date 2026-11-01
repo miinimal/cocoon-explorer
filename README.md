@@ -6,6 +6,17 @@ Shows: registered proxies, allowed image/model hashes, on-chain pricing, proxy e
 
 Built by [MINIMALCULT](https://t.me/minimalcult). Part of the MINIMALAI project.
 
+## Connect your own server to Cocoon
+
+One command, traps included — see **[CONNECT.md](CONNECT.md)** (EN/RU):
+
+```bash
+curl -sL https://raw.githubusercontent.com/miinimal/cocoon-explorer/main/tools/cocoon-up.sh | bash
+```
+
+Tools: `tools/cocoon-up.sh` (client installer), `tools/deploy_wallet.py` (deploy a funded `uninit` Cocoon wallet),
+`tools/cocoon-watch-install.sh` (hourly Telegram alert when live workers appear or disappear).
+
 ## Run locally
 
 ```bash
