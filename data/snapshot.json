@@ -1,0 +1,475 @@
+{
+ "generated_at": "2026-11-01T01:42Z",
+ "source": "tonapi.io",
+ "network": "mainnet",
+ "root": {
+  "address": "EQCns7bYSp0igFvS1wpb5wsZjCKCV19MD5AVzI4EyxsnU73k",
+  "balance_ton": 20.042,
+  "status": "active",
+  "last_activity": null,
+  "version": 91,
+  "last_proxy_seqno": 3,
+  "params_version": 18,
+  "unique_id": 239,
+  "is_test": false,
+  "price_per_token": "20",
+  "worker_fee_per_token": "19",
+  "min_proxy_stake": "15000000000",
+  "min_client_stake": "15000000000",
+  "owner_address": "0:e796c95723646d2355a12e6b5e9646f8095406c6bf04ff14888e5d0783bf6336"
+ },
+ "proxy_contract": {
+  "address": "EQDGkQM7RIWp6yGW79i8oV3zJ-vdnpV68pdZ2W8mrpE3cJ2y",
+  "balance_ton": 399.567,
+  "status": "active",
+  "last_activity": null
+ },
+ "params": {
+  "params_version": 18,
+  "unique_id": 239,
+  "is_test": false,
+  "price_per_token": "20",
+  "worker_fee_per_token": "19",
+  "cached_tokens_price_multiplier": 1000,
+  "reasoning_tokens_price_multiplier": 80000,
+  "proxy_delay_before_close": 86400,
+  "client_delay_before_close": 43200,
+  "min_proxy_stake": "15000000000",
+  "min_client_stake": "15000000000",
+  "proxy_code_hash": "17912810338382436528664132346883690667221724970078027472808932076066895792125",
+  "worker_code_hash": "80060579788562814238208707456681716104627861552608307256979669993122766944828",
+  "client_code_hash": "83280399240101511841786613634090629084877944837710524254664712796371270072275"
+ },
+ "registry": {
+  "config_version": 91,
+  "proxies": [
+   {
+    "seqno": 2,
+    "worker_endpoint": "91.108.4.11:5222",
+    "client_endpoint": "91.108.4.11:8888"
+   }
+  ],
+  "proxy_image_hashes": 5,
+  "worker_image_hashes": 7,
+  "model_hashes": 4,
+  "last_proxy_seqno": 3
+ },
+ "pricing": {
+  "price_per_token_nano": 20,
+  "ton_per_1k_tokens": {
+   "prompt": 2e-05,
+   "cached": 2e-06,
+   "completion": 0.00016,
+   "reasoning": 0.00016
+  },
+  "proxy_fee_percent": 5.0,
+  "client_min_stake_ton": 15.0,
+  "client_close_delay_hours": 12.0,
+  "note": "completion multiplier is assumed 80000 if the get-method omits it; verify with a live request"
+ },
+ "monthly": [
+  {
+   "month": "2026-04",
+   "events": 2000,
+   "truncated": true,
+   "proxy_commits": 1819,
+   "client_wallets": 5,
+   "client_deposits_ton": 208.46,
+   "payouts_ton": 45.2,
+   "ops": {
+    "CocoonClientProxyRequest": 154,
+    "CocoonWorkerProxyRequest": 26,
+    "CocoonReturnExcessesBack": 43,
+    "CocoonPayout": 3,
+    "CocoonExtProxyPayoutRequest": 1
+   }
+  },
+  {
+   "month": "2026-05",
+   "events": 2000,
+   "truncated": true,
+   "proxy_commits": 1884,
+   "client_wallets": 3,
+   "client_deposits_ton": 78.5,
+   "payouts_ton": 0.0,
+   "ops": {
+    "CocoonClientProxyRequest": 97,
+    "CocoonWorkerProxyRequest": 19,
+    "CocoonReturnExcessesBack": 24
+   }
+  },
+  {
+   "month": "2026-06",
+   "events": 2000,
+   "truncated": true,
+   "proxy_commits": 1933,
+   "client_wallets": 2,
+   "client_deposits_ton": 31.4,
+   "payouts_ton": 0.2,
+   "ops": {
+    "CocoonClientProxyRequest": 57,
+    "CocoonWorkerProxyRequest": 9,
+    "CocoonReturnExcessesBack": 12,
+    "CocoonExtProxyPayoutRequest": 1
+   }
+  },
+  {
+   "month": "2026-07",
+   "events": 2000,
+   "truncated": true,
+   "proxy_commits": 1913,
+   "client_wallets": 4,
+   "client_deposits_ton": 62.8,
+   "payouts_ton": 0.0,
+   "ops": {
+    "CocoonClientProxyRequest": 72,
+    "CocoonWorkerProxyRequest": 15,
+    "CocoonReturnExcessesBack": 19
+   }
+  },
+  {
+   "month": "2026-08",
+   "events": 2000,
+   "truncated": true,
+   "proxy_commits": 1997,
+   "client_wallets": 1,
+   "client_deposits_ton": 0.0,
+   "payouts_ton": 0.0,
+   "ops": {
+    "CocoonClientProxyRequest": 3
+   }
+  },
+  {
+   "month": "2026-09",
+   "events": 2000,
+   "truncated": true,
+   "proxy_commits": 1999,
+   "client_wallets": 1,
+   "client_deposits_ton": 0.0,
+   "payouts_ton": 0.0,
+   "ops": {
+    "CocoonClientProxyRequest": 1
+   }
+  },
+  {
+   "month": "2026-10",
+   "events": 21,
+   "truncated": false,
+   "proxy_commits": 0,
+   "client_wallets": 6,
+   "client_deposits_ton": 32.1,
+   "payouts_ton": 0.0,
+   "ops": {
+    "CocoonClientProxyRequest": 25,
+    "CocoonReturnExcessesBack": 3
+   }
+  },
+  {
+   "month": "2026-11",
+   "events": 0,
+   "truncated": false,
+   "proxy_commits": 0,
+   "client_wallets": 0,
+   "client_deposits_ton": 0.0,
+   "payouts_ton": 0.0,
+   "ops": {}
+  }
+ ],
+ "admin_timeline": [
+  {
+   "time": "2026-05-22T12:04Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-05-19T23:36Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:726b1165bd"
+  },
+  {
+   "time": "2026-05-19T16:39Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-20T14:16Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-20T14:03Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-12T04:14Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-10T17:00Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-10T09:14Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-10T09:13Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-10T07:39Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-10T07:20Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-10T01:16Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-10T01:00Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-09T20:38Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-09T20:38Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-04-09T20:37Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2026-01-13T02:49Z",
+   "op": "cocoon_owner_client_register",
+   "from": "0:44612315d0"
+  },
+  {
+   "time": "2026-01-12T17:54Z",
+   "op": "cocoon_owner_client_register",
+   "from": "0:44612315d0"
+  },
+  {
+   "time": "2026-01-12T17:46Z",
+   "op": "cocoon_owner_client_register",
+   "from": "0:44612315d0"
+  },
+  {
+   "time": "2026-01-12T17:30Z",
+   "op": "cocoon_owner_client_register",
+   "from": "0:44612315d0"
+  },
+  {
+   "time": "2025-12-30T08:16Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-25T13:04Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-22T17:22Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-22T16:26Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-22T13:52Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-20T10:22Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-18T20:34Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-18T14:17Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-18T14:08Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-12T16:36Z",
+   "op": "cocoon_add_model_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-12T11:50Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-12T10:40Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-09T13:16Z",
+   "op": "cocoon_add_model_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-04T22:31Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-04T22:26Z",
+   "op": "cocoon_add_model_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-04T21:29Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-03T12:33Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-03T09:26Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-02T13:21Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-02T10:01Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-02T02:01Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-02T02:00Z",
+   "op": "cocoon_del_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-02T01:59Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-12-01T07:53Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T19:35Z",
+   "op": "cocoon_unregister_proxy",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T17:06Z",
+   "op": "cocoon_register_proxy",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T16:58Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T15:19Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T14:27Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T14:23Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T12:46Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T12:34Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T12:30Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T12:00Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T11:38Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T10:32Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T01:00Z",
+   "op": "cocoon_add_worker_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-30T00:57Z",
+   "op": "cocoon_add_proxy_type",
+   "from": "0:e796c95723"
+  },
+  {
+   "time": "2025-11-29T20:36Z",
+   "op": "cocoon_upgrade_full",
+   "from": "0:e796c95723"
+  }
+ ]
+}

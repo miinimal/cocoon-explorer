@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Cocoon Explorer</title>
+<meta name="description" content="Live map of Telegram's Cocoon confidential AI network on TON: proxies, pricing, deposits, payouts. By MINIMALCULT.">
+<style>
+:root{
+  --bg:#ffffff;--fg:#0f0f0f;--muted:#6b7280;--card:#f4f5f7;--line:#e5e7eb;--accent:#0a84ff;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;
+  --bg:var(--tg-theme-bg-color,#ffffff);--fg:var(--tg-theme-text-color,#0f0f0f);--muted:var(--tg-theme-hint-color,#6b7280);
+  --card:var(--tg-theme-secondary-bg-color,#f4f5f7);--accent:var(--tg-theme-link-color,#0a84ff);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:var(--tg-theme-bg-color,#0e0f12);--fg:var(--tg-theme-text-color,#f3f4f6);--muted:var(--tg-theme-hint-color,#9ca3af);--card:var(--tg-theme-secondary-bg-color,#1a1c21);--line:#2a2d35;--accent:var(--tg-theme-link-color,#4ea1ff)}}
+:root[data-theme="dark"]{--bg:#0e0f12;--fg:#f3f4f6;--muted:#9ca3af;--card:#1a1c21;--line:#2a2d35;--accent:#4ea1ff}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;-webkit-text-size-adjust:100%}
+body{padding:calc(12px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto;overflow-x:hidden}
+h1{font-size:22px;margin:4px 0 2px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0}
+@media(min-width:560px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;min-width:0}
+.k{font-size:12px;color:var(--muted);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.v small{font-size:12px;font-weight:500;color:var(--muted)}
+h2{font-size:16px;margin:20px 0 8px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border-bottom:0}
+.row .l{color:var(--muted);flex:0 0 auto}.row .r{text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;color:#fff}
+.ok{background:var(--ok)}.warn{background:var(--warn)}.bad{background:var(--bad)}
+.bars{display:flex;align-items:flex-end;gap:6px;height:110px;padding:8px 0 0}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.bar i{display:block;width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px}
+.bar b{font-size:10px;color:var(--muted);font-weight:500;margin-top:4px;white-space:nowrap}
+.bar em{font-size:10px;font-style:normal;margin-bottom:2px;font-variant-numeric:tabular-nums}
+.note{color:var(--muted);font-size:12.5px;margin-top:8px}
+a{color:var(--accent);text-decoration:none}
+footer{margin-top:26px;color:var(--muted);font-size:12.5px;line-height:1.6}
+</style>
+</head>
+<body>
+<h1>Cocoon Explorer</h1>
+<div class="sub" id="sub">Live map of Telegram's confidential AI network on TON</div>
+
+<div class="grid" id="kpi"></div>
+
+<h2>Network status</h2>
+<div class="card" id="status"></div>
+
+<h2>Pricing (root contract)</h2>
+<div class="card" id="pricing"></div>
+
+<h2>Proxy contract — monthly</h2>
+<div class="card">
+  <div class="bars" id="bars"></div>
+  <div class="note">Client deposits per month (TON). Bars are lower bounds: months marked * were sampled.</div>
+  <div id="months"></div>
+</div>
+
+<h2>Registry</h2>
+<div class="card" id="registry"></div>
+
+<h2>Admin timeline (root contract)</h2>
+<div class="card" id="timeline"></div>
+
+<footer>
+  Data read directly from the TON blockchain via tonapi.io. No keys, no stake, no affiliation with Telegram or Cocoon.<br>
+  Built by <a href="https://t.me/minimalcult">MINIMALCULT</a> · source on GitHub soon · roots:
+  <span class="mono" id="roots"></span>
+</footer>
+
+<script>
+const S = /*__SNAPSHOT__*/null;
+const $ = (id) => document.getElementById(id);
+const ton = (x, d=2) => (x==null?'—':Number(x).toLocaleString('en-US',{maximumFractionDigits:d})+' TON');
+const fmt = (x) => x==null?'—':Number(x).toLocaleString('en-US');
+const short = (a) => a? a.slice(0,6)+'…'+a.slice(-4):'—';
+
+if (S) {
+  const reg = S.registry||{}, p = S.pricing||{}, root = S.root||{}, px = S.proxy_contract||{};
+  const months = (S.monthly||[]).filter(m => m.events>0 || m.client_wallets>0);
+  const last = months[months.length-1]||{}, prev = months[months.length-2]||{};
+  $('sub').textContent = 'Snapshot ' + (S.generated_at||'') + ' · mainnet';
+
+  const kpis = [
+    ['Proxies registered', fmt((reg.proxies||[]).length), ''],
+    ['Models allowed', fmt(reg.model_hashes), 'hashes in root'],
+    ['Worker images', fmt(reg.worker_image_hashes), 'allowed hashes'],
+    ['Proxy balance', ton(px.balance_ton,0), 'escrow of clients'],
+    ['Clients this month', fmt(last.client_wallets), last.month||''],
+    ['Deposits this month', ton(last.client_deposits_ton,1), last.month||''],
+    ['Min client stake', ton(p.client_min_stake_ton,0), 'refund after '+(p.client_close_delay_hours||'?')+' h'],
+    ['Proxy fee', (p.proxy_fee_percent??'—')+' %', 'of worker price'],
+  ];
+  $('kpi').innerHTML = kpis.map(([k,v,s]) => `<div class="card"><div class="k">${k}</div><div class="v">${v}${s?` <small>${s}</small>`:''}</div></div>`).join('');
+
+  // status heuristics: commits = proxy wrote state to chain
+  const commitsNow = last.proxy_commits||0, commitsPrev = prev.proxy_commits||0;
+  let st, cls, why;
+  if (commitsNow>0) { st='Serving'; cls='ok'; why=`${fmt(commitsNow)} proxy state commits in ${last.month}`; }
+  else if (commitsPrev>0) { st='Quiet'; cls='warn'; why=`No proxy state commits in ${last.month} (${fmt(commitsPrev)} in ${prev.month}), while ${fmt(last.client_wallets)} client wallets deposited ${ton(last.client_deposits_ton,1)}`; }
+  else { st='Unknown'; cls='bad'; why='No proxy activity observed in the last two months'; }
+  const adminLast = (S.admin_timeline||[])[0];
+  $('status').innerHTML = `
+    <div class="row"><span class="l">Proxy</span><span class="r"><span class="pill ${cls}">${st}</span></span></div>
+    <div class="row"><span class="l">Why</span><span class="r">${why}</span></div>
+    <div class="row"><span class="l">Last admin action</span><span class="r">${adminLast?adminLast.op.replace('cocoon_','')+' · '+adminLast.time.slice(0,10):'—'}</span></div>
+    <div class="row"><span class="l">Config version</span><span class="r">${fmt(root.version)} · params v${fmt(root.params_version)}</span></div>
+    <div class="row"><span class="l">Root balance</span><span class="r">${ton(root.balance_ton)}</span></div>`;
+
+  const t = p.ton_per_1k_tokens||{};
+  $('pricing').innerHTML = `
+    <div class="row"><span class="l">Base price</span><span class="r">${fmt(p.price_per_token_nano)} nanoTON / token</span></div>
+    <div class="row"><span class="l">Prompt · 1k tokens</span><span class="r">${t.prompt??'—'} TON</span></div>
+    <div class="row"><span class="l">Cached · 1k</span><span class="r">${t.cached??'—'} TON</span></div>
+    <div class="row"><span class="l">Completion · 1k</span><span class="r">${t.completion??'—'} TON</span></div>
+    <div class="row"><span class="l">Reasoning · 1k</span><span class="r">${t.reasoning??'—'} TON</span></div>
+    <div class="note">Nominal values from on-chain parameters. Observed token budgets suggest the effective rate differs; a measured rate from a live request will replace this line.</div>`;
+
+  const max = Math.max(1, ...months.map(m=>m.client_deposits_ton||0));
+  $('bars').innerHTML = months.map(m => `<div class="bar"><em>${m.client_deposits_ton?Math.round(m.client_deposits_ton):''}</em><i style="height:${Math.max(2,Math.round((m.client_deposits_ton||0)/max*80))}%"></i><b>${m.month.slice(2)}${m.truncated?'*':''}</b></div>`).join('');
+  $('months').innerHTML = months.slice().reverse().map(m => `<div class="row"><span class="l">${m.month}${m.truncated?'*':''}</span><span class="r">${fmt(m.client_wallets)} clients · ${ton(m.client_deposits_ton,1)} in · ${ton(m.payouts_ton,1)} paid · ${fmt(m.proxy_commits)} commits</span></div>`).join('');
+
+  $('registry').innerHTML = (reg.proxies||[]).map(x => `<div class="row"><span class="l">Proxy #${x.seqno}</span><span class="r mono">${x.client_endpoint||x.worker_endpoint}</span></div>`).join('') +
+    `<div class="row"><span class="l">Proxy images</span><span class="r">${fmt(reg.proxy_image_hashes)}</span></div>
+     <div class="row"><span class="l">Worker images</span><span class="r">${fmt(reg.worker_image_hashes)}</span></div>
+     <div class="row"><span class="l">Model hashes</span><span class="r">${fmt(reg.model_hashes)}</span></div>
+     <div class="row"><span class="l">Last proxy seqno</span><span class="r">${fmt(reg.last_proxy_seqno)}</span></div>`;
+
+  $('timeline').innerHTML = (S.admin_timeline||[]).slice(0,12).map(x => `<div class="row"><span class="l">${x.time.slice(0,10)}</span><span class="r">${x.op.replace('cocoon_','')}</span></div>`).join('') || '<div class="note">—</div>';
+  $('roots').textContent = short(root.address) + ' · proxy ' + short(px.address);
+}
+if (window.Telegram && Telegram.WebApp) { try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch(e){} }
+</script>
+</body>
+</html>
