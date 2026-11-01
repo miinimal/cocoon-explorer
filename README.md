@@ -4,7 +4,7 @@ Live, open map of Telegram's **Cocoon** confidential AI network on TON — read 
 
 Shows: registered proxies, allowed image/model hashes, on-chain pricing, proxy escrow balance, monthly client deposits and worker payouts, root-contract admin timeline.
 
-Built by [MINIMALCULT](https://t.me/minimalcult). Part of the MINIMALAI project.
+Built by **Aleksandr Shcherbakov** ([@miinimal](https://github.com/miinimal), founder of [MINIMALCULT](https://t.me/minimalcult)). Part of the MINIMALAI project. See [ORIGINS.md](ORIGINS.md).
 
 ## Connect your own server to Cocoon
 

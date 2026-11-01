@@ -12,7 +12,7 @@
 #    emulated-first signed message (tools/deploy_wallet.py);
 #  - the bundled lite-server list can silently drop outgoing messages: replaced with https://ton.org/global.config.json;
 #  - the runner is installed as a systemd service (auto-restart, survives reboot).
-# Built by MINIMALCULT. MIT license. No warranty: you are funding a wallet whose keys live in $DIR/wallet.json.
+# Built by Aleksandr Shcherbakov (@miinimal), MINIMALCULT. MIT license. No warranty: you are funding a wallet whose keys live in $DIR/wallet.json.
 set -euo pipefail
 
 V=${GOCOON_VERSION:-v0.3.0}
@@ -126,4 +126,4 @@ echo "models:";  curl -s -m 20 http://127.0.0.1:10000/v1/models | python3 -c "im
 d=json.load(sys.stdin); [print('  ',m['id'],'workers:',len(m.get('workers') or [])) for m in d.get('data',[])]" || true
 echo
 echo "OpenAI-compatible endpoint: http://127.0.0.1:10000/v1   (logs: journalctl -u gocoon -f)"
-echo "Network map: https://miinimal.github.io/cocoon-explorer/   Built by MINIMALCULT — t.me/minimalcult"
+echo "Network map: https://miinimal.github.io/cocoon-explorer/   Built by Aleksandr Shcherbakov (@miinimal), MINIMALCULT — t.me/minimalcult"

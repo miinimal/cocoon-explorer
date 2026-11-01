@@ -79,4 +79,4 @@ curl -sL https://raw.githubusercontent.com/miinimal/cocoon-explorer/main/tools/c
 - Tonkeeper игнорирует параметр `init=` в ссылках `ton://transfer`.
 - Ни один публичный клиент не проверяет аттестацию TEE — карта проверяет её независимо каждый час.
 
-Сделано MINIMALCULT · [t.me/minimalcult](https://t.me/minimalcult) · [карта сети](https://miinimal.github.io/cocoon-explorer/)
+Автор — Aleksandr Shcherbakov ([@miinimal](https://github.com/miinimal)), MINIMALCULT · [t.me/minimalcult](https://t.me/minimalcult) · [карта сети](https://miinimal.github.io/cocoon-explorer/)
