@@ -71,7 +71,9 @@ def parse_root_data(addr):
         d = sl.load_dict(keylen)
         return 0 if d is None else len(d)
 
-    proxy_hashes = dict_count(data, 256)
+    pdict = data.load_dict(256)
+    proxy_hash_list = sorted(f"{k:064x}" for k in (pdict or {}).keys())
+    proxy_hashes = len(proxy_hash_list)
     reg = data.load_dict(32, value_deserializer=lambda v: v)
     proxies = []
     if reg:
@@ -87,7 +89,8 @@ def parse_root_data(addr):
     worker_hashes = dict_count(data, 256)
     model_hashes = dict_count(data, 256)
     return {"config_version": version, "proxies": sorted(proxies, key=lambda p: p["seqno"]),
-            "proxy_image_hashes": proxy_hashes, "worker_image_hashes": worker_hashes,
+            "proxy_image_hashes": proxy_hashes, "proxy_image_hash_list": proxy_hash_list,
+            "worker_image_hashes": worker_hashes,
             "model_hashes": model_hashes, "last_proxy_seqno": last_proxy_seqno}
 
 
@@ -189,6 +192,12 @@ def main():
                 eps.append(extra)
         ver = int(snap["registry"].get("config_version") or snap["root"].get("version") or 0)
         snap["live"] = [_probe.probe(e, root_config_version=ver, timeout=20) for e in eps]
+        allowed = set(snap["registry"].get("proxy_image_hash_list") or [])
+        for x in snap["live"]:
+            att = (x.get("server_cert") or {}).get("attestation") or {}
+            if att.get("image_hash"):
+                att["image_hash_allowed_by_root"] = att["image_hash"] in allowed
+                att["cert_expired"] = (x["server_cert"].get("not_after") or "9") < snap["generated_at"]
     except Exception as e:  # noqa: BLE001
         snap["live"] = [{"error": f"probe unavailable: {str(e)[:160]}"}]
     snap["monthly"] = monthly_stats(PROXY_SC, a.months)

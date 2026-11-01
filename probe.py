@@ -210,8 +210,62 @@ def make_client_cert():
     return cp, kp
 
 
+TDX_QUOTE_OID = "1.3.6.1.4.1.12345.1"
+TDX_USER_CLAIMS_OID = "1.3.6.1.4.1.12345.2"
+
+
+def parse_tdx_quote(q):
+    """TDX quote v4: 48-byte header, then the 584-byte TD report body."""
+    if len(q) < 632:
+        raise ValueError(f"quote too short: {len(q)}")
+    ver, key_type, tee_type = struct.unpack("<HHI", q[:8])
+    body = 48
+    f = lambda o, n: q[body + o: body + o + n]  # noqa: E731
+    return {
+        "version": ver, "att_key_type": key_type, "tee_type": f"{tee_type:#x}",
+        "tee_tcb_svn": f(0, 16).hex(), "mr_seam": f(16, 48).hex(), "td_attributes": f(112, 8).hex(),
+        "mr_td": f(136, 48), "mr_config_id": f(184, 48), "mr_owner": f(232, 48), "mr_owner_config": f(280, 48),
+        "rtmr": [f(328 + 48 * i, 48) for i in range(4)], "reportdata": f(520, 64),
+    }
+
+
+def attestation_check(der):
+    """Independent RA-TLS check following TelegramMessenger/cocoon tee/cocoon/RATLS.cpp:
+    reportdata == sha512(TLS Ed25519 public key); user_claims == public key;
+    image_hash = sha256(mr_td|mr_config_id|mr_owner|mr_owner_config|rtmr0..3|zero64).
+    The Intel DCAP signature over the quote is NOT verified here (needs PCS collateral)."""
+    from cryptography import x509
+    from cryptography.hazmat.primitives import serialization
+    c = x509.load_der_x509_certificate(der)
+    pub = c.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    ext = {e.oid.dotted_string: getattr(e.value, "value", None) for e in c.extensions}
+    q, claims = ext.get(TDX_QUOTE_OID), ext.get(TDX_USER_CLAIMS_OID)
+    out = {"tee": None, "public_key": pub.hex()}
+    if not q:
+        out["result"] = "no TDX quote in certificate"
+        return out
+    t = parse_tdx_quote(q)
+    out["tee"] = "TDX" if t["tee_type"] == "0x81" else t["tee_type"]
+    out["quote_version"] = t["version"]
+    out["quote_size"] = len(q)
+    out["mr_td"] = t["mr_td"].hex()
+    out["rtmr"] = [r.hex() for r in t["rtmr"]]
+    out["tee_tcb_svn"] = t["tee_tcb_svn"]
+    out["reportdata_binds_tls_key"] = t["reportdata"] == hashlib.sha512(pub).digest()
+    out["user_claims_match_key"] = (claims == pub) if claims is not None else None
+    img = hashlib.sha256(t["mr_td"] + t["mr_config_id"] + t["mr_owner"] + t["mr_owner_config"]
+                         + b"".join(t["rtmr"]) + b"\0" * 64).hexdigest()
+    out["image_hash"] = img
+    out["quote_signature_verified"] = False
+    return out
+
+
 def describe_cert(der):
     out = {"sha256": hashlib.sha256(der).hexdigest(), "size": len(der)}
+    try:
+        out["attestation"] = attestation_check(der)
+    except Exception as e:  # noqa: BLE001
+        out["attestation"] = {"error": str(e)[:200]}
     try:
         from cryptography import x509
         c = x509.load_der_x509_certificate(der)
