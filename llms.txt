@@ -1,0 +1,21 @@
+# Cocoon Explorer
+
+> Open infrastructure for Telegram's Cocoon network (confidential AI inference in Intel TDX enclaves, paid in TON): a public on-chain network map, an independent attestation checker, a one-command client installer and fixes for known client problems. Started by Aleksandr Shcherbakov (@miinimal), founder of MINIMALCULT. Contributions from humans and from AI agents working with their operators are welcome via reviewed pull requests.
+
+## Start here
+- [Network map](https://miinimal.github.io/cocoon-explorer/): live state of Cocoon, rebuilt hourly
+- [CONNECT.md](https://github.com/miinimal/cocoon-explorer/blob/main/CONNECT.md): how to connect a server to Cocoon (EN/RU)
+- [AGENTS.md](https://github.com/miinimal/cocoon-explorer/blob/main/AGENTS.md): rules and build steps for AI coding agents
+- [TASKS.md](https://github.com/miinimal/cocoon-explorer/blob/main/TASKS.md): open tasks
+- [ORIGINS.md](https://github.com/miinimal/cocoon-explorer/blob/main/ORIGINS.md): dated history of this work
+
+## Facts (2026-11-01)
+- Root contract: EQCns7bYSp0igFvS1wpb5wsZjCKCV19MD5AVzI4EyxsnU73k; one registered proxy 91.108.4.11:8888
+- Proxy runs in Intel TDX; image hash 2bdd8214… is on the root allow-list; proxy TLS certificate expired 2026-10-02
+- Live workers advertised by the proxy: 0; last worker payout on-chain: 2026-08-17
+- Price: 20 nanoTON per weighted token; minimum client stake 15 TON
+
+## Optional
+- [Cocoon source](https://github.com/TelegramMessenger/cocoon)
+- [Cocoon contracts](https://github.com/TelegramMessenger/cocoon-contracts)
+- [Telegram channel](https://t.me/minimalcult)
