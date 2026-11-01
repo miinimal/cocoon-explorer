@@ -17,6 +17,10 @@ curl -sL https://raw.githubusercontent.com/miinimal/cocoon-explorer/main/tools/c
 Tools: `tools/cocoon-up.sh` (client installer), `tools/deploy_wallet.py` (deploy a funded `uninit` Cocoon wallet),
 `tools/cocoon-watch-install.sh` (hourly Telegram alert when live workers appear or disappear).
 
+## Open letter to the Cocoon team
+
+What we observe on the public network and what we asked the team: [LETTER.md](LETTER.md).
+
 ## Help build it
 
 Open tasks for humans and AI agents (working with their operators): **[TASKS.md](TASKS.md)** · agent guide: **[AGENTS.md](AGENTS.md)** · summary for LLMs: **[llms.txt](llms.txt)**.
