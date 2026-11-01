@@ -52,10 +52,15 @@ if [ ! -f "$DATA/ton-config.bak" ]; then
 fi
 
 ADDR=$(python3 -c "import json;print(json.load(open('$DATA/wallet.json'))['nodeAddress'])")
-BAL=$(curl -s -m 20 "https://tonapi.io/v2/blockchain/accounts/$ADDR" | python3 -c "import sys,json
+ACC=$(curl -s -m 20 "https://tonapi.io/v2/blockchain/accounts/$ADDR")
+BAL=$(printf '%s' "$ACC" | python3 -c "import sys,json
 try: print(json.load(sys.stdin).get('balance',0))
 except Exception: print(0)")
-if [ "${BAL:-0}" -lt 19000000000 ]; then
+STATUS=$(printf '%s' "$ACC" | python3 -c "import sys,json
+try: print(json.load(sys.stdin).get('status','none'))
+except Exception: print('none')")
+# an already deployed wallet has spent part of its balance on the stake: never ask to fund it again
+if [ "$STATUS" != active ] && [ "${BAL:-0}" -lt 19000000000 ]; then
   say "3/5 fund this wallet with 20 TON, then run this command again"
   UQ=$(python3 - "$ADDR" <<'PY'
 import base64,sys,binascii
@@ -78,7 +83,6 @@ PY
   exit 0
 fi
 
-STATUS=$(curl -s -m 20 "https://tonapi.io/v2/blockchain/accounts/$ADDR" | python3 -c "import sys,json;print(json.load(sys.stdin).get('status'))")
 if [ "$STATUS" != active ]; then
   say "4/5 deploying the wallet (emulate first, then broadcast)"
   curl -sSL -o "$DIR/deploy_wallet.py" "$RAW/deploy_wallet.py"
@@ -95,6 +99,7 @@ else
 fi
 
 say "5/5 starting the client as a service (gocoon.service)"
+for u in gocoon2 gocoon3; do systemctl stop "$u" 2>/dev/null || true; done
 cat > /etc/systemd/system/gocoon.service <<UNIT
 [Unit]
 Description=Cocoon client runner (gocoon)
