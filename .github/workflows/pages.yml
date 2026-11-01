@@ -19,8 +19,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install pytoniq-core
+      - run: pip install pytoniq-core cryptography
       - run: python3 indexer.py --out data/snapshot.json --months 8 || echo "indexer failed, publishing last snapshot"
+      - name: live probe summary
+        run: python3 -c "import json; s=json.load(open('data/snapshot.json')); print(json.dumps(s.get('live'), indent=1)[:6000])"
       - run: python3 build_page.py data/snapshot.json
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }

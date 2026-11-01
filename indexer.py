@@ -180,6 +180,17 @@ def main():
                        "client_min_stake_ton": int(p.get("min_client_stake", 0)) / NANO,
                        "client_close_delay_hours": int(p.get("client_delay_before_close", 0)) / 3600,
                        "note": "completion multiplier is assumed 80000 if the get-method omits it; verify with a live request"}
+    # live probe of every registered proxy (+ the historic second proxy), no payment, no registration
+    try:
+        import probe as _probe
+        eps = [p["client_endpoint"] for p in snap["registry"].get("proxies", []) if p.get("client_endpoint")]
+        for extra in ("91.108.4.12:8888",):
+            if extra not in eps:
+                eps.append(extra)
+        ver = int(snap["registry"].get("config_version") or snap["root"].get("version") or 0)
+        snap["live"] = [_probe.probe(e, root_config_version=ver, timeout=20) for e in eps]
+    except Exception as e:  # noqa: BLE001
+        snap["live"] = [{"error": f"probe unavailable: {str(e)[:160]}"}]
     snap["monthly"] = monthly_stats(PROXY_SC, a.months)
     snap["admin_timeline"] = admin_timeline(ROOT)
     import os

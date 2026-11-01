@@ -51,6 +51,9 @@ footer{margin-top:26px;color:var(--muted);font-size:12.5px;line-height:1.6}
 <h2>Network status</h2>
 <div class="card" id="status"></div>
 
+<h2>Live probe</h2>
+<div class="card" id="live"></div>
+
 <h2>Pricing (root contract)</h2>
 <div class="card" id="pricing"></div>
 
@@ -101,7 +104,9 @@ if (S) {
   // status heuristics: commits = proxy wrote state to chain
   const commitsNow = last.proxy_commits||0, commitsPrev = prev.proxy_commits||0;
   let st, cls, why;
-  if (commitsNow>0) { st='Serving'; cls='ok'; why=`${fmt(commitsNow)} proxy state commits in ${last.month}`; }
+  const liveOk = (S.live||[]).filter(x => x.alive && x.stage==='done');
+  if (liveOk.length) { st='Online'; cls='ok'; why=`Live handshake succeeded with ${liveOk.length} prox${liveOk.length>1?'ies':'y'} at ${liveOk[0].probed_at}`; }
+  else if (commitsNow>0) { st='Serving'; cls='ok'; why=`${fmt(commitsNow)} proxy state commits in ${last.month}`; }
   else if (commitsPrev>0) { st='Quiet'; cls='warn'; why=`No proxy state commits in ${last.month} (${fmt(commitsPrev)} in ${prev.month}), while ${fmt(last.client_wallets)} client wallets deposited ${ton(last.client_deposits_ton,1)}`; }
   else { st='Unknown'; cls='bad'; why='No proxy activity observed in the last two months'; }
   const adminLast = (S.admin_timeline||[])[0];
@@ -111,6 +116,26 @@ if (S) {
     <div class="row"><span class="l">Last admin action</span><span class="r">${adminLast?adminLast.op.replace('cocoon_','')+' · '+adminLast.time.slice(0,10):'—'}</span></div>
     <div class="row"><span class="l">Config version</span><span class="r">${fmt(root.version)} · params v${fmt(root.params_version)}</span></div>
     <div class="row"><span class="l">Root balance</span><span class="r">${ton(root.balance_ton)}</span></div>`;
+
+  const live = S.live||[];
+  const esc = (s) => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  $('live').innerHTML = live.length ? live.map(x => {
+    const ok = x.alive && x.stage==='done', partial = x.alive && !ok;
+    const pill = ok ? '<span class="pill ok">Online</span>' : partial ? '<span class="pill warn">Partial</span>' : '<span class="pill bad">Offline</span>';
+    const models = (x.worker_types&&x.worker_types.models)||[];
+    const mrows = models.map(m => `<div class="row"><span class="l mono">${esc(m.model)}</span><span class="r">${m.workers} workers · ${m.active_requests}/${m.capacity} busy</span></div>`).join('');
+    const wterr = x.worker_types_error ? `<div class="row"><span class="l">Workers</span><span class="r">needs auth (${esc(x.worker_types_error.message)})</span></div>` : '';
+    const cert = x.server_cert ? `<div class="row"><span class="l">TLS cert</span><span class="r mono">${esc(x.server_cert.sha256.slice(0,16))}… · ${x.server_cert.custom_extension_bytes||0} B attestation ext.</span></div>` : '';
+    return `<div class="row"><span class="l mono">${esc(x.endpoint||'—')}</span><span class="r">${pill}</span></div>
+      ${x.pow?`<div class="row"><span class="l">PoW</span><span class="r">difficulty ${x.pow.difficulty} · ${x.pow.solve_ms} ms</span></div>`:''}
+      ${x.tls?`<div class="row"><span class="l">TLS</span><span class="r">${esc(x.tls.version)} · ${esc(x.tls.cipher)}</span></div>`:''}
+      ${cert}
+      ${x.proxy&&x.proxy.proto_version?`<div class="row"><span class="l">Protocol</span><span class="r">v${x.proxy.proto_version}</span></div>`:''}
+      ${mrows}${wterr}
+      ${x.error?`<div class="row"><span class="l">Error</span><span class="r">${esc(x.error)} (at ${esc(x.stage)})</span></div>`:''}
+      <div class="row"><span class="l">Checked</span><span class="r">${esc(x.probed_at||'')} · ${x.total_ms??'—'} ms</span></div>`;
+  }).join('<div style="height:10px"></div>') : '<div class="note">Probe not run in this snapshot.</div>';
+  const anyOnline = live.some(x => x.alive && x.stage==='done');
 
   const t = p.ton_per_1k_tokens||{};
   $('pricing').innerHTML = `
