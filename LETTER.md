@@ -1,6 +1,6 @@
 # Open letter to the Cocoon team
 
-Written on 1 November 2026. Email route: security@telegram.org (new issues in TelegramMessenger/cocoon are currently restricted).
+Sent on 1 November 2026 by email to security@telegram.org (new issues in TelegramMessenger/cocoon are currently restricted).
 Published here so that anyone can check the facts. All figures are read from the TON chain or from the code.
 
 **Subject: Cocoon public network — independent observations, two fund/security issues, and an offer to help**
