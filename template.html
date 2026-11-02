@@ -69,6 +69,9 @@ footer{margin-top:26px;color:var(--muted);font-size:12.5px;line-height:1.6}
 
 <h2>Testnet</h2>
 <div class="card" id="testnet"></div>
+<h2>Client stakes</h2>
+<p class="sub">Every COCOON client contract of the current and the earlier proxy, from chain data. A forced refund pays at most the proxy's own stake; a closed contract counts as refunded only if the proxy's payouts to its owner covered the stake. Owners are not shown. Check your own contract: <code>scripts/client-stake-check</code> in the <a href="https://github.com/miinimal/cocoon/blob/testnet/scripts/client-stake-check" target="_blank" rel="noopener">testnet fork</a>.</p>
+<div class="card" id="stakes"></div>
 
 <h2>Admin timeline (root contract)</h2>
 <div class="card" id="timeline"></div>
@@ -140,6 +143,15 @@ if (S) {
       return w + `<div class="row"><span class="l">Client contract</span><span class="r">${cc.address?`stake ${esc(cc.stake_gram)} GRAM · tokens billed ${esc(cc.tokens_used)}`:'not deployed yet'}</span></div>
       <div class="row"><span class="l">Network</span><span class="r">${N.requests_billed?'<span class="pill ok">serving · requests paid on chain</span>':N.serving?'<span class="pill ok">serving</span>':'<span class="pill warn">starting · funding test GRAM</span>'}</span></div>`; })()}
     <div class="row"><span class="l">Connect</span><span class="r"><a href="${esc(com.docs||'#')}" target="_blank" rel="noopener">TESTNET.md</a> · unofficial, community-run · test GRAM has no value</span></div>`;
+  const SM = S.stake_map||{};
+  $('stakes').innerHTML = SM.error ? `<div class="row"><span class="l">Error</span><span class="r">${esc(SM.error)}</span></div>` :
+    (SM.proxies||[]).map(p => `
+    <div class="row"><span class="l">Proxy <span class="mono">${short(p.proxy)}</span></span><span class="r">${esc(p.clients)} clients</span></div>
+    <div class="row"><span class="l">Open or closing</span><span class="r">${esc(p.open+p.closing)} · ${esc(p.stake_open_gram)} GRAM stake <span class="pill warn">at risk if forced</span></span></div>
+    <div class="row"><span class="l">Closed, refunded</span><span class="r">${esc(p.refunded)} <span class="pill ok">paid back</span></span></div>
+    <div class="row"><span class="l">Closed, not refunded</span><span class="r">${esc(p.stuck)} · ${esc(p.stake_stuck_gram)} GRAM ${p.stuck?'<span class="pill bad">stuck</span>':''}</span></div>`).join('') +
+    ((SM.clients||[]).filter(c => c.status==='stuck').map(c => `<div class="row"><span class="l"><a class="mono" href="https://tonviewer.com/${esc(c.address)}" target="_blank" rel="noopener">${short(c.address)}</a></span><span class="r">stake ${esc(c.stake_gram)} · paid back ${esc(c.paid_back_gram)} GRAM</span></div>`).join('')) +
+    `<div class="row"><span class="l">Updated</span><span class="r">${esc(SM.generated_at||'—')}</span></div>`;
   $('live').innerHTML = live.length ? live.map(x => {
     const ok = x.alive && x.stage==='done', partial = x.alive && !ok;
     const pill = ok ? '<span class="pill ok">Online</span>' : partial ? '<span class="pill warn">Partial</span>' : '<span class="pill bad">Offline</span>';

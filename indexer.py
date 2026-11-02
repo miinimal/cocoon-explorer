@@ -27,6 +27,9 @@ TESTNET_NODE = {"proxy": "0QDHqpBNd4v3UKh8UxLGeA4ZYKfPEaJGXgVi4vU9mErTZoa0",
                 "client": "0QCkJwbZV03jOGMjnlzqslfJNT6LTbhZbKaR5AXEiYM-VouP",
                 "key_manager": "0QAuo3aPiZdZ9SckmY6b0r_Zsy2jcqNCyuw1zVTZfB8wNFf5"}
 TESTNET_PROXY_SC = "0QB2db24fOw7Ik8o_TUiwLktsoYBRCKunxXC6varvzzwuXdo"
+OLD_PROXY_SC = "EQBBx-L1UuDG1GgWdgq-_xHfcpF1CQHjRH5_oyTtalPXFO1a"  # earlier COCOON proxy contract (seen as clients' proxy)
+TONCENTER = "https://toncenter.com/api/v3"
+OP_CLIENT_PROXY_REQUEST = "0x65448ff4"  # cocoon-contracts opcodes.fc: op::client_proxy_request
 WALLET_MIN_GRAM = 2.1  # runners wait for min_wallet_balance 2.1 (cocoon_wallet.fc refuses to send below 2 GRAM)
 PROXY_SC = "EQDGkQM7RIWp6yGW79i8oV3zJ-vdnpV68pdZ2W8mrpE3cJ2y"  # from ton-blockchain/abis
 TONAPI = "https://tonapi.io/v2"
@@ -214,6 +217,73 @@ def testnet_snapshot():
     return out
 
 
+def stake_map(proxies=(PROXY_SC, OLD_PROXY_SC)):
+    """Every COCOON client contract of the given proxy contracts and the fate of its stake, from chain data only.
+    Clients are found by their client_proxy_request messages to the proxy. A closed contract keeps its stake field,
+    so for closed contracts the proxy's payouts to the owner are summed: refunded vs stuck. Owners are not published."""
+    from pytoniq_core import Address
+    out = {"proxies": [], "clients": []}
+    for proxy in proxies:
+        srcs, off = {}, 0
+        while True:
+            d = get(f"{TONCENTER}/messages?destination={proxy}&opcode={OP_CLIENT_PROXY_REQUEST}&direction=in"
+                    f"&limit=1000&offset={off}&sort=asc")
+            ms = d.get("messages", [])
+            for m in ms:
+                srcs.setdefault(m["source"], int(m.get("created_at") or 0))
+            off += len(ms)
+            time.sleep(1.1)
+            if len(ms) < 1000 or off >= 50000:
+                break
+        summ = {"proxy": proxy, "clients": len(srcs), "open": 0, "closing": 0, "refunded": 0, "stuck": 0,
+                "stake_open_gram": 0.0, "stake_stuck_gram": 0.0}
+        for addr, first in srcs.items():
+            acc = get(f"{TONCENTER}/account?address={addr}")
+            time.sleep(1.1)
+            row = {"address": Address(addr).to_str(is_bounceable=True), "proxy": proxy, "first_seen": iso(first)}
+            if not acc.get("data"):
+                row["status"] = acc.get("status")
+                out["clients"].append(row)
+                continue
+            try:
+                info = parse_client_contract(acc["data"])
+                from pytoniq_core import Cell
+                import base64
+                r = Cell.one_from_boc(base64.b64decode(acc["data"])).refs[0].begin_parse()
+                owner = r.load_address().to_str(is_user_friendly=False)
+            except Exception:  # noqa: BLE001
+                continue
+            row.update(state=info["state"], stake_gram=info["stake_gram"], tokens_used=info["tokens_used"])
+            if info["state"] == 0:
+                summ["open"] += 1
+                summ["stake_open_gram"] += info["stake_gram"]
+                row["status"] = "open"
+            elif info["state"] == 1:
+                summ["closing"] += 1
+                summ["stake_open_gram"] += info["stake_gram"]
+                row["status"] = "closing"
+            elif info["stake_gram"]:
+                pays = get(f"{TONCENTER}/messages?source={proxy}&destination={owner}&limit=100").get("messages", [])
+                time.sleep(1.1)
+                paid = sum(int(m.get("value") or 0) for m in pays) / NANO
+                row["paid_back_gram"] = round(paid, 3)
+                if paid < info["stake_gram"] - 0.5:
+                    row["status"] = "stuck"
+                    summ["stuck"] += 1
+                    summ["stake_stuck_gram"] += info["stake_gram"] - paid
+                else:
+                    row["status"] = "refunded"
+                    summ["refunded"] += 1
+            else:
+                row["status"] = "closed"
+            out["clients"].append(row)
+        summ["stake_open_gram"] = round(summ["stake_open_gram"], 3)
+        summ["stake_stuck_gram"] = round(summ["stake_stuck_gram"], 3)
+        out["proxies"].append(summ)
+    out["generated_at"] = iso(int(time.time()))
+    return out
+
+
 def parse_client_contract(data_b64):
     """COCOON client contract data (ClientContract::on_state_update layout)."""
     import base64
@@ -299,6 +369,10 @@ def main():
         snap["testnet"] = testnet_snapshot()
     except Exception as e:  # noqa: BLE001
         snap["testnet"] = {"error": str(e)[:200]}
+    try:
+        snap["stake_map"] = stake_map()
+    except Exception as e:  # noqa: BLE001
+        snap["stake_map"] = {"error": str(e)[:200]}
     snap["monthly"] = monthly_stats(PROXY_SC, a.months)
     snap["admin_timeline"] = admin_timeline(ROOT)
     import os
