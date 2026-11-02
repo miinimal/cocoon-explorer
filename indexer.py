@@ -21,6 +21,13 @@ ROOT = "EQCns7bYSp0igFvS1wpb5wsZjCKCV19MD5AVzI4EyxsnU73k"
 ROOT_TESTNET = "EQBT4hy4vMEZ9uxSCuhw_gBKh9_AwmHXLe7Wo0O4Vh-4kRjJ"  # hardcoded in Telegram's cocoon-launch
 COMMUNITY_TESTNET_ROOT = "kQDw1ylF_89nG60ustm4vxrxMPx_chvPStTQs_0OqI1PunDa"  # github.com/miinimal/cocoon TESTNET.md
 TONCENTER_TESTNET = "https://testnet.toncenter.com/api/v3"
+# community testnet node (proxy #1): node wallets and the proxy contract, all public testnet addresses
+TESTNET_NODE = {"proxy": "0QDHqpBNd4v3UKh8UxLGeA4ZYKfPEaJGXgVi4vU9mErTZoa0",
+                "worker": "0QCIoDCxGJVK6tUbdWyHxyKGitUtQNSLKIJ3v5w6SuER3bNc",
+                "client": "0QCkJwbZV03jOGMjnlzqslfJNT6LTbhZbKaR5AXEiYM-VouP",
+                "key_manager": "0QAuo3aPiZdZ9SckmY6b0r_Zsy2jcqNCyuw1zVTZfB8wNFf5"}
+TESTNET_PROXY_SC = "0QB2db24fOw7Ik8o_TUiwLktsoYBRCKunxXC6varvzzwuXdo"
+WALLET_MIN_GRAM = 2.1  # runners wait for min_wallet_balance 2.1 (cocoon_wallet.fc refuses to send below 2 GRAM)
 PROXY_SC = "EQDGkQM7RIWp6yGW79i8oV3zJ-vdnpV68pdZ2W8mrpE3cJ2y"  # from ton-blockchain/abis
 TONAPI = "https://tonapi.io/v2"
 UA = {"User-Agent": "minimalai-explorer/0.1 (+https://t.me/minimalcult)"}
@@ -200,7 +207,50 @@ def testnet_snapshot():
             r["last_activity"] = iso(txs[0]["now"]) if txs else None
         except Exception as e:  # noqa: BLE001
             r["error"] = str(e)[:200]
+    try:
+        out["node"] = testnet_node()
+    except Exception as e:  # noqa: BLE001
+        out["node"] = {"error": str(e)[:200]}
     return out
+
+
+def parse_client_contract(data_b64):
+    """COCOON client contract data (ClientContract::on_state_update layout)."""
+    import base64
+    from pytoniq_core import Cell
+    s = Cell.one_from_boc(base64.b64decode(data_b64)).begin_parse()
+    return {"state": s.load_uint(2), "prepaid_gram": s.load_coins() / NANO, "stake_gram": s.load_coins() / NANO,
+            "tokens_used": s.load_int(64)}
+
+
+def testnet_node():
+    """Readiness of the community node: wallet balances vs the 2 GRAM wallet minimum, proxy and client contracts,
+    tokens billed by the client contract (> 0 means requests went through the network and were paid on chain)."""
+    node = {"wallets": {}, "proxy_contract": {"address": TESTNET_PROXY_SC}}
+    for role, addr in TESTNET_NODE.items():
+        acc = get(f"{TONCENTER_TESTNET}/account?address={addr}")
+        bal = int(acc.get("balance") or 0) / NANO
+        node["wallets"][role] = {"address": addr, "balance_gram": round(bal, 3), "ready": bal >= WALLET_MIN_GRAM}
+        time.sleep(1.1)
+    acc = get(f"{TONCENTER_TESTNET}/account?address={TESTNET_PROXY_SC}")
+    node["proxy_contract"].update(status=acc.get("status"), balance_gram=round(int(acc.get("balance") or 0) / NANO, 3))
+    time.sleep(1.1)
+    # client contract: the address the client wallet deployed (outgoing message carrying state init)
+    txs = get(f"{TONCENTER_TESTNET}/transactions?account={TESTNET_NODE['client']}&limit=50&sort=asc").get("transactions", [])
+    dest = next((m.get("destination") for t in txs for m in t.get("out_msgs", []) if m.get("init_state")), None)
+    if dest:
+        time.sleep(1.1)
+        acc = get(f"{TONCENTER_TESTNET}/account?address={dest}")
+        cc = {"address": dest, "status": acc.get("status")}
+        if acc.get("data"):
+            try:
+                cc.update(parse_client_contract(acc["data"]))
+            except Exception as e:  # noqa: BLE001
+                cc["parse_error"] = str(e)[:120]
+        node["client_contract"] = cc
+    node["serving"] = all(w["ready"] for r, w in node["wallets"].items() if r in ("proxy", "worker", "client"))
+    node["requests_billed"] = bool((node.get("client_contract") or {}).get("tokens_used"))
+    return node
 
 
 def main():

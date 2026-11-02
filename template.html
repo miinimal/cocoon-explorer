@@ -133,6 +133,12 @@ if (S) {
     <div class="row"><span class="l">Proxies</span><span class="r">${(com.proxies||[]).map(x=>'#'+x.seqno+' <span class="mono">'+esc(x.address.split(' ')[1]||x.address)+'</span>').join('<br>')||'—'}</span></div>
     <div class="row"><span class="l">Price</span><span class="r">${com.price_per_token_nano!=null? esc(com.price_per_token_nano)+' nano-GRAM / token (as mainnet)':'—'}</span></div>
     <div class="row"><span class="l">Last activity</span><span class="r">${esc(com.last_activity||'—')}</span></div>
+    ${(() => { const N = T.node||{}; if (!N.wallets) return N.error ? `<div class="row"><span class="l">Node</span><span class="r">${esc(N.error)}</span></div>` : '';
+      const names = {proxy:'Proxy wallet', worker:'Worker wallet', client:'Client wallet', key_manager:'Key manager wallet'};
+      const w = Object.entries(N.wallets).map(([k,v]) => `<div class="row"><span class="l">${names[k]||esc(k)}</span><span class="r">${esc(v.balance_gram)} GRAM ${v.ready?'<span class="pill ok">ready</span>':'<span class="pill warn">needs ≥ 2.1 GRAM</span>'}</span></div>`).join('');
+      const cc = N.client_contract||{};
+      return w + `<div class="row"><span class="l">Client contract</span><span class="r">${cc.address?`stake ${esc(cc.stake_gram)} GRAM · tokens billed ${esc(cc.tokens_used)}`:'not deployed yet'}</span></div>
+      <div class="row"><span class="l">Network</span><span class="r">${N.requests_billed?'<span class="pill ok">serving · requests paid on chain</span>':N.serving?'<span class="pill ok">serving</span>':'<span class="pill warn">starting · funding test GRAM</span>'}</span></div>`; })()}
     <div class="row"><span class="l">Connect</span><span class="r"><a href="${esc(com.docs||'#')}" target="_blank" rel="noopener">TESTNET.md</a> · unofficial, community-run · test GRAM has no value</span></div>`;
   $('live').innerHTML = live.length ? live.map(x => {
     const ok = x.alive && x.stage==='done', partial = x.alive && !ok;
