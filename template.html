@@ -162,7 +162,7 @@ if (S) {
 
   const t = p.ton_per_1k_tokens||{};
   $('pricing').innerHTML = `
-    <div class="row"><span class="l">Base price</span><span class="r">${fmt(p.price_per_token_nano)} nanoTON / token</span></div>
+    <div class="row"><span class="l">Base price</span><span class="r">${fmt(p.price_per_token_nano)} nano-GRAM / token</span></div>
     <div class="row"><span class="l">Prompt · 1k tokens</span><span class="r">${t.prompt??'—'} GRAM</span></div>
     <div class="row"><span class="l">Cached · 1k</span><span class="r">${t.cached??'—'} GRAM</span></div>
     <div class="row"><span class="l">Completion · 1k</span><span class="r">${t.completion??'—'} GRAM</span></div>
