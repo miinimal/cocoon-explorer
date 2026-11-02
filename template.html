@@ -67,6 +67,9 @@ footer{margin-top:26px;color:var(--muted);font-size:12.5px;line-height:1.6}
 <h2>Registry</h2>
 <div class="card" id="registry"></div>
 
+<h2>Testnet</h2>
+<div class="card" id="testnet"></div>
+
 <h2>Admin timeline (root contract)</h2>
 <div class="card" id="timeline"></div>
 
@@ -119,6 +122,18 @@ if (S) {
 
   const live = S.live||[];
   const esc = (s) => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  // testnet: official root (hardcoded in Telegram's launcher) vs community root
+  const T = S.testnet||{}, ofc = T.official_root||{}, com = T.community_root||{};
+  const st2 = (s) => s==='active' ? '<span class="pill ok">active</span>' : `<span class="pill bad">${esc(s||'unknown')}</span>`;
+  const short = (a) => a ? esc(a.slice(0,6)+'…'+a.slice(-4)) : '—';
+  $('testnet').innerHTML = (T.error ? `<div class="row"><span class="l">Error</span><span class="r">${esc(T.error)}</span></div>` : '') + `
+    <div class="row"><span class="l">Official testnet root</span><span class="r"><a class="mono" href="https://testnet.tonviewer.com/${esc(ofc.address)}" target="_blank" rel="noopener">${short(ofc.address)}</a> ${st2(ofc.status)}</span></div>
+    <div class="row"><span class="l">Community testnet root</span><span class="r"><a class="mono" href="https://testnet.tonviewer.com/${esc(com.address)}" target="_blank" rel="noopener">${short(com.address)}</a> ${st2(com.status)}</span></div>
+    <div class="row"><span class="l">Proxies</span><span class="r">${(com.proxies||[]).map(x=>'#'+x.seqno+' <span class="mono">'+esc(x.address.split(' ')[1]||x.address)+'</span>').join('<br>')||'—'}</span></div>
+    <div class="row"><span class="l">Price</span><span class="r">${com.price_per_token_nano!=null? esc(com.price_per_token_nano)+' nano-GRAM / token (as mainnet)':'—'}</span></div>
+    <div class="row"><span class="l">Last activity</span><span class="r">${esc(com.last_activity||'—')}</span></div>
+    <div class="row"><span class="l">Connect</span><span class="r"><a href="${esc(com.docs||'#')}" target="_blank" rel="noopener">TESTNET.md</a> · unofficial, community-run · test GRAM has no value</span></div>`;
   $('live').innerHTML = live.length ? live.map(x => {
     const ok = x.alive && x.stage==='done', partial = x.alive && !ok;
     const pill = ok ? '<span class="pill ok">Online</span>' : partial ? '<span class="pill warn">Partial</span>' : '<span class="pill bad">Offline</span>';

@@ -18,7 +18,9 @@ import urllib.request
 from collections import Counter, defaultdict
 
 ROOT = "EQCns7bYSp0igFvS1wpb5wsZjCKCV19MD5AVzI4EyxsnU73k"
-ROOT_TESTNET = "EQBT4hy4vMEZ9uxSCuhw_gBKh9_AwmHXLe7Wo0O4Vh-4kRjJ"
+ROOT_TESTNET = "EQBT4hy4vMEZ9uxSCuhw_gBKh9_AwmHXLe7Wo0O4Vh-4kRjJ"  # hardcoded in Telegram's cocoon-launch
+COMMUNITY_TESTNET_ROOT = "kQDw1ylF_89nG60ustm4vxrxMPx_chvPStTQs_0OqI1PunDa"  # github.com/miinimal/cocoon TESTNET.md
+TONCENTER_TESTNET = "https://testnet.toncenter.com/api/v3"
 PROXY_SC = "EQDGkQM7RIWp6yGW79i8oV3zJ-vdnpV68pdZ2W8mrpE3cJ2y"  # from ton-blockchain/abis
 TONAPI = "https://tonapi.io/v2"
 UA = {"User-Agent": "minimalai-explorer/0.1 (+https://t.me/minimalcult)"}
@@ -158,6 +160,49 @@ def admin_timeline(addr, limit=100):
     return items
 
 
+def testnet_snapshot():
+    """Official vs community COCOON root on TON testnet (toncenter v3, no key)."""
+    import base64
+    out = {"official_root": {"address": ROOT_TESTNET}, "community_root": {"address": COMMUNITY_TESTNET_ROOT,
+           "docs": "https://github.com/miinimal/cocoon/blob/testnet/TESTNET.md"}}
+    for key in ("official_root", "community_root"):
+        r = out[key]
+        try:
+            acc = get(f"{TONCENTER_TESTNET}/account?address={r['address']}")
+            r["status"] = acc.get("status")
+            r["balance_gram"] = int(acc.get("balance") or 0) / NANO
+            if acc.get("data"):
+                from pytoniq_core import Cell, HashMap
+                c = Cell.one_from_boc(base64.b64decode(acc["data"]))
+                cs = c.begin_parse()
+                r["owner"] = cs.load_address().to_str(is_test_only=True, is_bounceable=False)
+                r["version"] = cs.load_uint(32)
+                d = c.refs[0].begin_parse()
+                d.load_maybe_ref()
+                reg = d.load_maybe_ref()
+                r["last_proxy_seqno"] = d.load_uint(32)
+                proxies = []
+                if reg is not None:
+                    def val(sl):
+                        sl.load_bit()
+                        n = sl.load_uint(7)
+                        return sl.load_bytes(n).decode("utf-8", "replace")
+                    hm = HashMap.parse(reg.begin_parse(), 32, value_deserializer=val)
+                    proxies = [{"seqno": k, "address": v} for k, v in sorted(hm.items())]
+                r["proxies"] = proxies
+                pr = c.refs[1].begin_parse()
+                r["params_struct_version"] = pr.load_uint(8)
+                pr.load_uint(32); pr.load_uint(32)
+                r["is_test"] = bool(pr.load_bit())
+                r["price_per_token_nano"] = pr.load_coins()
+            txs = get(f"{TONCENTER_TESTNET}/transactions?account={r['address']}&limit=20&sort=desc").get("transactions", [])
+            r["recent_transactions"] = len(txs)
+            r["last_activity"] = iso(txs[0]["now"]) if txs else None
+        except Exception as e:  # noqa: BLE001
+            r["error"] = str(e)[:200]
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="data/snapshot.json")
@@ -200,6 +245,10 @@ def main():
                 att["cert_expired"] = (x["server_cert"].get("not_after") or "9") < snap["generated_at"]
     except Exception as e:  # noqa: BLE001
         snap["live"] = [{"error": f"probe unavailable: {str(e)[:160]}"}]
+    try:
+        snap["testnet"] = testnet_snapshot()
+    except Exception as e:  # noqa: BLE001
+        snap["testnet"] = {"error": str(e)[:200]}
     snap["monthly"] = monthly_stats(PROXY_SC, a.months)
     snap["admin_timeline"] = admin_timeline(ROOT)
     import os
