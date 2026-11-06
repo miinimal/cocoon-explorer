@@ -228,6 +228,23 @@ def testnet_snapshot():
     return out
 
 
+def proxy_contract_state(addr):
+    """Proxy contract own state from get_cocoon_proxy_data: a forced client refund is paid from `stake`,
+    capped by it (cocoon_proxy.fc, client_proxy_refund_force); min_proxy_stake is a root parameter that the
+    contracts do not enforce."""
+    body = json.dumps({"address": addr, "method": "get_cocoon_proxy_data", "stack": []}).encode()
+    req = urllib.request.Request(f"{TONCENTER}/runGetMethod", data=body,
+                                 headers={**UA, "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=40) as r:
+        d = json.load(r)
+    if d.get("exit_code") not in (0, 1):
+        raise RuntimeError(f"get_cocoon_proxy_data exit code {d.get('exit_code')}")
+    st = d["stack"]
+    num = lambda i: int(st[i]["value"], 16)  # noqa: E731
+    return {"state": num(3), "free_balance_gram": round(num(4) / NANO, 3), "stake_gram": round(num(5) / NANO, 3),
+            "min_proxy_stake_gram": round(num(9) / NANO, 3), "min_client_stake_gram": round(num(10) / NANO, 3)}
+
+
 def stake_map(proxies=(PROXY_SC, OLD_PROXY_SC)):
     """Every COCOON client contract of the given proxy contracts and the fate of its stake, from chain data only.
     Clients are found by their client_proxy_request messages to the proxy. A closed contract keeps its stake field,
@@ -288,6 +305,11 @@ def stake_map(proxies=(PROXY_SC, OLD_PROXY_SC)):
             else:
                 row["status"] = "closed"
             out["clients"].append(row)
+        try:
+            summ["contract"] = proxy_contract_state(proxy)
+        except Exception as e:  # noqa: BLE001
+            summ["contract_error"] = str(e)[:160]
+        time.sleep(1.1)
         summ["stake_open_gram"] = round(summ["stake_open_gram"], 3)
         summ["stake_stuck_gram"] = round(summ["stake_stuck_gram"], 3)
         out["proxies"].append(summ)
