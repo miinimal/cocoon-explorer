@@ -98,12 +98,15 @@ def parse_root_data(addr):
             proxies.append({"seqno": seqno, "worker_endpoint": parts[0] if parts else txt,
                             "client_endpoint": parts[1] if len(parts) > 1 else None})
     last_proxy_seqno = data.load_uint(32)
-    worker_hashes = dict_count(data, 256)
-    model_hashes = dict_count(data, 256)
+    wdict = data.load_dict(256)
+    worker_hash_list = sorted(f"{k:064x}" for k in (wdict or {}).keys())
+    mdict = data.load_dict(256)
+    model_hash_list = sorted(f"{k:064x}" for k in (mdict or {}).keys())
     return {"config_version": version, "proxies": sorted(proxies, key=lambda p: p["seqno"]),
             "proxy_image_hashes": proxy_hashes, "proxy_image_hash_list": proxy_hash_list,
-            "worker_image_hashes": worker_hashes,
-            "model_hashes": model_hashes, "last_proxy_seqno": last_proxy_seqno}
+            "worker_image_hashes": len(worker_hash_list), "worker_image_hash_list": worker_hash_list,
+            "model_hashes": len(model_hash_list), "model_hash_list": model_hash_list,
+            "last_proxy_seqno": last_proxy_seqno}
 
 
 # --- events / monthly stats ------------------------------------------------------------------
@@ -166,7 +169,15 @@ def admin_timeline(addr, limit=100):
         op = m.get("decoded_op_name")
         if not op or not op.startswith("cocoon_"):
             continue
-        items.append({"time": iso(t["utime"]), "op": op, "from": (m.get("source") or {}).get("address", "")[:12]})
+        item = {"time": iso(t["utime"]), "op": op, "from": (m.get("source") or {}).get("address", "")[:12]}
+        body = m.get("decoded_body") or {}
+        h = body.get("worker_hash") or body.get("proxy_hash") or body.get("model_hash")
+        if h is not None:
+            try:
+                item["hash"] = f"{int(h):064x}"
+            except (TypeError, ValueError):
+                pass
+        items.append(item)
     return items
 
 

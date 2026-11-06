@@ -67,6 +67,10 @@ footer{margin-top:26px;color:var(--muted);font-size:12.5px;line-height:1.6}
 <h2>Registry</h2>
 <div class="card" id="registry"></div>
 
+<h2>Image allow-list</h2>
+<p class="sub">TEE image hashes the root contract accepts right now, with the date each was added (from the root history). A worker whose TEE_IMAGE_HASH is not listed fails <code>has_worker_hash</code> at start. Check your own hash or compare your image files with a release, read-only: <a href="https://github.com/miinimal/cocoon/blob/image-hash-check/scripts/image-hash-check" target="_blank" rel="noopener">scripts/image-hash-check</a>. Background: <a href="https://github.com/TelegramMessenger/cocoon/issues/69" target="_blank" rel="noopener">cocoon#69</a>.</p>
+<div class="card" id="images"></div>
+
 <h2>Testnet</h2>
 <div class="card" id="testnet"></div>
 <h2>Client stakes</h2>
@@ -216,6 +220,16 @@ if (S) {
      <div class="row"><span class="l">Worker images</span><span class="r">${fmt(reg.worker_image_hashes)}</span></div>
      <div class="row"><span class="l">Model hashes</span><span class="r">${fmt(reg.model_hashes)}</span></div>
      <div class="row"><span class="l">Last proxy seqno</span><span class="r">${fmt(reg.last_proxy_seqno)}</span></div>`;
+
+  const addedAt = {};
+  (S.admin_timeline||[]).forEach(x => { if (x.hash && /add_/.test(x.op) && !addedAt[x.hash]) addedAt[x.hash] = x.time; });
+  const imgRows = (list, kind) => (list||[]).map(h => ({h, kind, t: addedAt[h]||''}));
+  const imgs = imgRows(reg.worker_image_hash_list,'worker').concat(imgRows(reg.proxy_image_hash_list,'proxy'))
+    .sort((a,b) => (b.t||'').localeCompare(a.t||''));
+  const liveImg = new Set((S.live||[]).map(x => ((x.server_cert||{}).attestation||{}).image_hash).filter(Boolean));
+  $('images').innerHTML = imgs.length ? imgs.map(x => `<div class="row"><span class="l mono">${esc(x.h.slice(0,16))}…</span><span class="r">${x.kind}${liveImg.has(x.h)?' <span class="pill ok">seen live</span>':''} · ${x.t?esc(x.t.slice(0,10)):'added before history window'}</span></div>`).join('') +
+    `<div class="note">Full hashes: <code>python3 scripts/image-hash-check allowed</code>. Last worker image added ${esc((imgs.filter(x=>x.kind==='worker'&&x.t)[0]||{}).t||'—')}.</div>`
+    : '<div class="note">Hash lists not in this snapshot yet.</div>';
 
   $('timeline').innerHTML = (S.admin_timeline||[]).slice(0,12).map(x => `<div class="row"><span class="l">${x.time.slice(0,10)}</span><span class="r">${x.op.replace('cocoon_','')}</span></div>`).join('') || '<div class="note">—</div>';
   $('roots').textContent = short(root.address) + ' · proxy ' + short(px.address);
