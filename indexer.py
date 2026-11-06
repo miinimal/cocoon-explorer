@@ -14,6 +14,7 @@ import datetime as dt
 import json
 import sys
 import time
+import urllib.error
 import urllib.request
 from collections import Counter, defaultdict
 
@@ -37,15 +38,25 @@ UA = {"User-Agent": "minimalai-explorer/0.1 (+https://t.me/minimalcult)"}
 NANO = 1e9
 
 
-def get(url, tries=3):
+def get(url, tries=6):
+    """GET JSON. Public toncenter/tonapi without a key allow about one request per second and answer 429
+    beyond that, so 429 and 5xx are retried with the server's Retry-After or a growing pause."""
     for i in range(tries):
         try:
             with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=40) as r:
                 return json.load(r)
-        except Exception as e:  # noqa: BLE001
+        except urllib.error.HTTPError as e:
+            if i == tries - 1 or (e.code != 429 and e.code < 500):
+                raise
+            try:
+                wait = float(e.headers.get("Retry-After") or 0)
+            except ValueError:
+                wait = 0
+            time.sleep(max(wait, 2.0 * (i + 1)))
+        except Exception:  # noqa: BLE001
             if i == tries - 1:
                 raise
-            time.sleep(1.5 * (i + 1))
+            time.sleep(2.0 * (i + 1))
 
 
 def run_method(addr, method):

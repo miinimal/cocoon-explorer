@@ -93,8 +93,13 @@ def main(argv):
     with open(snap_path) as f:
         snap = json.load(f)
     live = [x for x in (snap.get("live") or []) if x.get("endpoint")]
-    date = (snap.get("generated_at") or time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime()))[:10]
-    entries = merge(load_prev(url, path), live, date)
+    today = time.strftime("%Y-%m-%d", time.gmtime())
+    date = (snap.get("generated_at") or "")[:10]
+    if date != today:
+        # the indexer failed and an older snapshot is being republished: keep history unchanged
+        print(f"history: snapshot is from {date or 'unknown date'}, not today; no new entries")
+        live = []
+    entries = merge(load_prev(url, path), live, date or today)
     here = os.path.dirname(os.path.abspath(__file__))
     os.makedirs(os.path.join(here, "dist"), exist_ok=True)
     doc = {"description": "Daily independent attestation checks of Cocoon proxies (RA-TLS key binding, "

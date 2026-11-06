@@ -21,11 +21,19 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install pytoniq-core cryptography dcap-qvl==0.7.1
       - run: python3 -m unittest discover -s tests -v
-      - run: python3 indexer.py --out data/snapshot.json --months 8 || echo "indexer failed, publishing last snapshot"
+      - name: Index the chain (falls back to the last published snapshot)
+        run: |
+          if ! python3 indexer.py --out data/snapshot.json --months 8; then
+            echo "::warning::indexer failed; republishing the last published snapshot"
+            curl -fsS -m 60 https://miinimal.github.io/cocoon-explorer/snapshot.json -o /tmp/last.json \
+              && python3 -c "import json;json.load(open('/tmp/last.json'))" \
+              && cp /tmp/last.json data/snapshot.json \
+              || echo "::warning::no published snapshot available; using the one in the repository"
+          fi
       - name: live probe summary
         run: python3 -c "import json; s=json.load(open('data/snapshot.json')); print(json.dumps([{k:v for k,v in x.items() if k!='server_cert'}|{'attestation':{k:v for k,v in ((x.get('server_cert') or {}).get('attestation') or {}).items() if k!='quote_b64'}} for x in s.get('live') or []], indent=1)[:8000])"
       - run: python3 history.py data/snapshot.json
-      - run: python3 build_page.py data/snapshot.json
+      - run: python3 build_page.py data/snapshot.json && cp data/snapshot.json dist/snapshot.json
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:
