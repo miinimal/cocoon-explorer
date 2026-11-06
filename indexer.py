@@ -182,10 +182,18 @@ def monthly_stats(addr, months):
     return list(reversed(out))
 
 
-def admin_timeline(addr, limit=300):
-    d = get(f"{TONAPI}/blockchain/accounts/{addr}/transactions?limit={limit}")
+def admin_timeline(addr, pages=3):
+    """Root admin operations, newest first. tonapi anonymous tier caps a page at 100, so page with before_lt."""
+    txs, before = [], None
+    for _ in range(pages):
+        url = f"{TONAPI}/blockchain/accounts/{addr}/transactions?limit=100" + (f"&before_lt={before}" if before else "")
+        page = get(url).get("transactions", [])
+        txs.extend(page)
+        if len(page) < 100:
+            break
+        before = page[-1]["lt"]
     items = []
-    for t in d.get("transactions", []):
+    for t in txs:
         m = t.get("in_msg") or {}
         op = m.get("decoded_op_name")
         if not op or not op.startswith("cocoon_"):
