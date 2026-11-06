@@ -160,6 +160,11 @@ if (S) {
     const wterr = x.worker_types_error ? `<div class="row"><span class="l">Workers</span><span class="r">needs auth (${esc(x.worker_types_error.message)})</span></div>` : '';
     const a = (x.server_cert&&x.server_cert.attestation)||{};
     const yn = (v) => v===true ? '<span class="pill ok">yes</span>' : v===false ? '<span class="pill bad">no</span>' : '—';
+    const histRow = (ep) => {
+      const h = (S.attestation_history||{})[ep];
+      if (!h) return '';
+      return `<div class="row"><span class="l">History</span><span class="r">${h.verified_days}/${h.days} days verified · online ${h.alive_days}/${h.days} · since ${esc(h.first)} · <a href="attestation-history.json" target="_blank" rel="noopener">data</a></span></div>`;
+    };
     const dcapRow = (d) => {
       d = d||{};
       let r;
@@ -185,6 +190,7 @@ if (S) {
       ${x.pow?`<div class="row"><span class="l">PoW</span><span class="r">difficulty ${x.pow.difficulty} · ${x.pow.solve_ms} ms</span></div>`:''}
       ${x.tls?`<div class="row"><span class="l">TLS</span><span class="r">${esc(x.tls.version)} · ${esc(x.tls.cipher)}</span></div>`:''}
       ${cert}
+      ${histRow(x.endpoint)}
       ${x.proxy&&x.proxy.proto_version?`<div class="row"><span class="l">Protocol</span><span class="r">v${x.proxy.proto_version}</span></div>`:''}
       ${mrows}${wterr}
       ${x.error?`<div class="row"><span class="l">Error</span><span class="r">${esc(x.error)} (at ${esc(x.stage)})</span></div>`:''}
