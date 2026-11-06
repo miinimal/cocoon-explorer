@@ -64,6 +64,53 @@ def summarize(entries):
     return by
 
 
+PARAMS_PREV_URL = "https://miinimal.github.io/cocoon-explorer/params-history.json"
+
+
+def params_fingerprint(snap):
+    """Network parameters tracked for changes: root params, config version and the allow-lists."""
+    reg = snap.get("registry") or {}
+    out = {f"params.{k}": v for k, v in (snap.get("params") or {}).items()}
+    out["config_version"] = reg.get("config_version")
+    for key in ("worker_image_hash_list", "proxy_image_hash_list", "model_hash_list"):
+        if reg.get(key) is not None:
+            out[key] = sorted(reg[key])
+    return out
+
+
+def params_changes(prev_entries, snap, date):
+    """Append an entry only when a tracked parameter differs from the last recorded state."""
+    cur = params_fingerprint(snap)
+    entries = list(prev_entries)
+    last = entries[-1]["state"] if entries else None
+    if last is None:
+        entries.append({"date": date, "kind": "first_observed", "state": cur, "changes": []})
+        return entries
+    changes = []
+    for k in sorted(set(cur) | set(last)):
+        a, b = last.get(k), cur.get(k)
+        if a == b or b is None:
+            continue
+        if isinstance(a, list) or isinstance(b, list):
+            sa, sb = set(a or []), set(b or [])
+            changes.append({"field": k, "added": sorted(sb - sa), "removed": sorted(sa - sb)})
+        else:
+            changes.append({"field": k, "from": a, "to": b})
+    if changes:
+        merged = dict(last)
+        merged.update({k: v for k, v in cur.items() if v is not None})
+        entries.append({"date": date, "kind": "changed", "state": merged, "changes": changes})
+    return entries
+
+
+def params_summary(entries):
+    changed = [e for e in entries if e["kind"] == "changed"]
+    first = entries[0]["date"] if entries else None
+    return {"observed_since": first, "changes": len(changed),
+            "last_change": changed[-1]["date"] if changed else None,
+            "last_fields": [c["field"] for c in changed[-1]["changes"]] if changed else []}
+
+
 def load_prev(url=None, path=None, attempts=3):
     if path:
         with open(path) as f:
@@ -109,6 +156,19 @@ def main(argv):
     with open(os.path.join(here, "dist", "attestation-history.json"), "w") as f:
         json.dump(doc, f, ensure_ascii=False, indent=0)
     snap["attestation_history"] = summarize(entries)
+
+    # network parameter change log, only from a fresh snapshot
+    pparams = [] if path else load_prev(PARAMS_PREV_URL)
+    if date == today and snap.get("params"):
+        pentries = params_changes(pparams, snap, today)
+    else:
+        pentries = pparams
+    with open(os.path.join(here, "dist", "params-history.json"), "w") as f:
+        json.dump({"description": "Change log of COCOON root parameters (prices, fees, stakes, delays, contract code "
+                                  "hashes), config version and image/model allow-lists, as observed by this map. "
+                                  "An entry is added only when something changes.",
+                   "updated_at": snap.get("generated_at"), "entries": pentries}, f, ensure_ascii=False, indent=0)
+    snap["params_history"] = params_summary(pentries)
     with open(snap_path, "w") as f:
         json.dump(snap, f, ensure_ascii=False)
     print("history:", len(entries), "entries;", json.dumps(snap["attestation_history"]))

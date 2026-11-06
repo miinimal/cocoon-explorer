@@ -41,5 +41,37 @@ class HistoryTest(unittest.TestCase):
         self.assertEqual(history.summarize(e)["b"]["alive_days"], 0)
 
 
+class ParamsHistoryTest(unittest.TestCase):
+    def snap(self, price="20", workers=("aa", "bb"), version=91):
+        return {"params": {"price_per_token": price, "min_proxy_stake": "15000000000"},
+                "registry": {"config_version": version, "worker_image_hash_list": list(workers),
+                             "proxy_image_hash_list": ["pp"], "model_hash_list": ["mm"]}}
+
+    def test_first_observation_then_no_entry_without_change(self):
+        e = history.params_changes([], self.snap(), "2026-11-06")
+        self.assertEqual([x["kind"] for x in e], ["first_observed"])
+        e = history.params_changes(e, self.snap(), "2026-11-07")
+        self.assertEqual(len(e), 1)
+
+    def test_value_and_list_changes_are_recorded(self):
+        e = history.params_changes([], self.snap(), "2026-11-06")
+        e = history.params_changes(e, self.snap(price="25", workers=("bb", "cc"), version=92), "2026-11-08")
+        self.assertEqual(e[-1]["kind"], "changed")
+        ch = {c["field"]: c for c in e[-1]["changes"]}
+        self.assertEqual(ch["params.price_per_token"], {"field": "params.price_per_token", "from": "20", "to": "25"})
+        self.assertEqual(ch["config_version"]["to"], 92)
+        self.assertEqual(ch["worker_image_hash_list"]["added"], ["cc"])
+        self.assertEqual(ch["worker_image_hash_list"]["removed"], ["aa"])
+        s = history.params_summary(e)
+        self.assertEqual((s["observed_since"], s["changes"], s["last_change"]), ("2026-11-06", 1, "2026-11-08"))
+
+    def test_missing_field_is_not_a_change(self):
+        e = history.params_changes([], self.snap(), "2026-11-06")
+        snap = self.snap()
+        del snap["registry"]["model_hash_list"]
+        e = history.params_changes(e, snap, "2026-11-07")
+        self.assertEqual(len(e), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

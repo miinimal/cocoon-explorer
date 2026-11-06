@@ -211,12 +211,18 @@ if (S) {
   const anyOnline = live.some(x => x.alive && x.stage==='done');
 
   const t = p.ton_per_1k_tokens||{};
+  const paramsRow = (h) => {
+    if (!h || !h.observed_since) return '';
+    const what = h.last_change ? `last change ${esc(h.last_change)} (${esc((h.last_fields||[]).join(', '))})` : `no change since ${esc(h.observed_since)}`;
+    return `<div class="row"><span class="l">Parameter history</span><span class="r">${what} · ${esc(h.changes)} change(s) recorded · <a href="params-history.json" target="_blank" rel="noopener">log</a></span></div>`;
+  };
   $('pricing').innerHTML = `
     <div class="row"><span class="l">Base price</span><span class="r">${fmt(p.price_per_token_nano)} nano-GRAM / token</span></div>
     <div class="row"><span class="l">Prompt · 1k tokens</span><span class="r">${t.prompt??'—'} GRAM</span></div>
     <div class="row"><span class="l">Cached · 1k</span><span class="r">${t.cached??'—'} GRAM</span></div>
     <div class="row"><span class="l">Completion · 1k</span><span class="r">${t.completion??'—'} GRAM</span></div>
     <div class="row"><span class="l">Reasoning · 1k</span><span class="r">${t.reasoning??'—'} GRAM</span></div>
+    ${paramsRow(S.params_history)}
     <div class="note">Nominal values from on-chain parameters. Observed token budgets suggest the effective rate differs; a measured rate from a live request will replace this line.</div>`;
 
   const max = Math.max(1, ...months.map(m=>m.client_deposits_ton||0));
