@@ -11,6 +11,7 @@ Usage:  python3 indexer.py [--out data/snapshot.json] [--months 12]
 """
 import argparse
 import datetime as dt
+import hashlib
 import json
 import sys
 import time
@@ -113,14 +114,23 @@ def parse_root_data(addr):
     worker_hash_list = sorted(f"{k:064x}" for k in (wdict or {}).keys())
     mdict = data.load_dict(256)
     model_hash_list = sorted(f"{k:064x}" for k in (mdict or {}).keys())
+    names = {hashlib.sha256(m.encode()).hexdigest(): m for m in KNOWN_MODELS}
+    model_names = {h: names[h] for h in model_hash_list if h in names}
     return {"config_version": version, "proxies": sorted(proxies, key=lambda p: p["seqno"]),
             "proxy_image_hashes": proxy_hashes, "proxy_image_hash_list": proxy_hash_list,
             "worker_image_hashes": len(worker_hash_list), "worker_image_hash_list": worker_hash_list,
-            "model_hashes": len(model_hash_list), "model_hash_list": model_hash_list,
+            "model_hashes": len(model_hash_list), "model_hash_list": model_hash_list, "model_names": model_names,
             "last_proxy_seqno": last_proxy_seqno}
 
 
 # --- events / monthly stats ------------------------------------------------------------------
+
+# Model strings published by operators (worker.conf "model", name@commit:verity). The root stores SHA-256 of the full
+# string (runners: td::sha256_bits256(model_name)), so a listed hash can only be named when its string is public.
+KNOWN_MODELS = [
+    "Qwen/Qwen3-32B@9216db5781bf21249d130ec9da846c4624c16137:a3782505b11f4cb89c220933e80c151969965ef67509bc98dd2fa20daa166728",  # cocoon#69
+    "Qwen/Qwen3-8B@b968826d9c46dd6066d109eabc6255188de91218:7e9d33bebf5518e0dc666e5a04ffbab247ff5878f91a9a55a6e942fe245a8ee9",   # cocoon#32
+]
 
 COMMIT_OP = "0x9a1247c0"  # proxy state commit (from proxy node wallet)
 
@@ -172,7 +182,7 @@ def monthly_stats(addr, months):
     return list(reversed(out))
 
 
-def admin_timeline(addr, limit=100):
+def admin_timeline(addr, limit=300):
     d = get(f"{TONAPI}/blockchain/accounts/{addr}/transactions?limit={limit}")
     items = []
     for t in d.get("transactions", []):
