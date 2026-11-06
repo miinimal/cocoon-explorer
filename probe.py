@@ -11,6 +11,7 @@ proxy params, and worker types / load if the proxy answers before authorization.
 
 Usage: python3 probe.py 91.108.4.11:8888 [--json]
 """
+import base64
 import datetime as dt
 import hashlib
 import json
@@ -229,11 +230,61 @@ def parse_tdx_quote(q):
     }
 
 
-def attestation_check(der):
+_COLLATERAL_CACHE = {}
+
+
+def dcap_verify(quote, now=None, collateral=None):
+    """Verify the Intel DCAP signature chain of a TDX quote.
+
+    Uses Phala's dcap-qvl (MIT): checks the quote signature by the attestation key, the
+    QE report, the PCK certificate chain up to the Intel SGX Root CA, the CRLs, and
+    evaluates the TCB level against Intel TCB info. Collateral is fetched from Intel PCS
+    (api.trustedservices.intel.com) and cached per FMSPC for the lifetime of the process.
+    Returns a dict with status "verified", "failed" or "not_checked"."""
+    out = {"status": "not_checked", "collateral_source": None}
+    try:
+        import dcap_qvl
+    except Exception:  # noqa: BLE001
+        out["reason"] = "dcap-qvl not installed"
+        return out
+    now = int(now if now is not None else time.time())
+    try:
+        if collateral is None:
+            key = None
+            try:
+                key = dcap_qvl.parse_quote(quote).fmspc()
+            except Exception:  # noqa: BLE001
+                key = None
+            collateral = _COLLATERAL_CACHE.get(key) if key else None
+            if collateral is None:
+                import asyncio
+                collateral = asyncio.run(dcap_qvl.get_collateral_from_pcs(quote))
+                if key:
+                    _COLLATERAL_CACHE[key] = collateral
+            out["collateral_source"] = "Intel PCS"
+        else:
+            out["collateral_source"] = "provided"
+    except Exception as e:  # noqa: BLE001
+        out["reason"] = f"collateral unavailable: {str(e)[:160]}"
+        return out
+    try:
+        report = dcap_qvl.verify(quote, collateral, now)
+    except Exception as e:  # noqa: BLE001
+        out["status"] = "failed"
+        out["reason"] = str(e).replace("Verification failed: ", "")[:200]
+        return out
+    out["status"] = "verified"
+    out["tcb_status"] = report.status
+    out["advisory_ids"] = list(report.advisory_ids or [])
+    out["checked_at"] = dt.datetime.fromtimestamp(now, dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return out
+
+
+def attestation_check(der, dcap=True):
     """Independent RA-TLS check following TelegramMessenger/cocoon tee/cocoon/RATLS.cpp:
     reportdata == sha512(TLS Ed25519 public key); user_claims == public key;
-    image_hash = sha256(mr_td|mr_config_id|mr_owner|mr_owner_config|rtmr0..3|zero64).
-    The Intel DCAP signature over the quote is NOT verified here (needs PCS collateral)."""
+    image_hash = sha256(mr_td|mr_config_id|mr_owner|mr_owner_config|rtmr0..3|zero64);
+    plus the Intel DCAP signature chain of the quote (dcap_verify)."""
     from cryptography import x509
     from cryptography.hazmat.primitives import serialization
     c = x509.load_der_x509_certificate(der)
@@ -256,7 +307,12 @@ def attestation_check(der):
     img = hashlib.sha256(t["mr_td"] + t["mr_config_id"] + t["mr_owner"] + t["mr_owner_config"]
                          + b"".join(t["rtmr"]) + b"\0" * 64).hexdigest()
     out["image_hash"] = img
-    out["quote_signature_verified"] = False
+    out["quote_b64"] = base64.b64encode(q).decode()
+    if dcap and out["tee"] == "TDX":
+        out["dcap"] = dcap_verify(q)
+    else:
+        out["dcap"] = {"status": "not_checked", "reason": "not a TDX quote" if dcap else "disabled"}
+    out["quote_signature_verified"] = {"verified": True, "failed": False}.get(out["dcap"]["status"])
     return out
 
 

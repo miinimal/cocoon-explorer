@@ -160,12 +160,26 @@ if (S) {
     const wterr = x.worker_types_error ? `<div class="row"><span class="l">Workers</span><span class="r">needs auth (${esc(x.worker_types_error.message)})</span></div>` : '';
     const a = (x.server_cert&&x.server_cert.attestation)||{};
     const yn = (v) => v===true ? '<span class="pill ok">yes</span>' : v===false ? '<span class="pill bad">no</span>' : '—';
+    const dcapRow = (d) => {
+      d = d||{};
+      let r;
+      if (d.status==='verified') {
+        const tcbOk = d.tcb_status==='UpToDate';
+        r = `<span class="pill ok">verified</span> TCB <span class="pill ${tcbOk?'ok':'warn'}">${esc(d.tcb_status||'—')}</span>` +
+            ((d.advisory_ids||[]).length ? ` · ${esc(d.advisory_ids.join(', '))}` : '');
+      } else if (d.status==='failed') {
+        r = `<span class="pill bad">failed</span> ${esc(d.reason||'')}`;
+      } else {
+        r = `not checked${d.reason?` (${esc(d.reason)})`:''}`;
+      }
+      return `<div class="row"><span class="l">Intel signature</span><span class="r">${r}</span></div>`;
+    };
     const cert = x.server_cert ? `
       <div class="row"><span class="l">TEE</span><span class="r">${esc(a.tee||'none')}${a.quote_size?` · quote v${a.quote_version}, ${a.quote_size} B`:''}</span></div>
       ${a.image_hash?`<div class="row"><span class="l">Image hash</span><span class="r mono">${esc(a.image_hash.slice(0,16))}…</span></div>
       <div class="row"><span class="l">Key bound to TEE</span><span class="r">${yn(a.reportdata_binds_tls_key)}</span></div>
       <div class="row"><span class="l">Image allowed by root</span><span class="r">${yn(a.image_hash_allowed_by_root)}</span></div>
-      <div class="row"><span class="l">Intel signature</span><span class="r">not checked yet</span></div>`:''}
+      ${dcapRow(a.dcap)}`:''}
       <div class="row"><span class="l">TLS cert</span><span class="r">${a.cert_expired?'<span class="pill warn">expired</span> ':''}valid to ${esc((x.server_cert.not_after||'').slice(0,10))}</span></div>` : '';
     return `<div class="row"><span class="l mono">${esc(x.endpoint||'—')}</span><span class="r">${pill}</span></div>
       ${x.pow?`<div class="row"><span class="l">PoW</span><span class="r">difficulty ${x.pow.difficulty} · ${x.pow.solve_ms} ms</span></div>`:''}
