@@ -70,7 +70,7 @@ footer{margin-top:26px;color:var(--muted);font-size:12.5px;line-height:1.6}
 <h2>Testnet</h2>
 <div class="card" id="testnet"></div>
 <h2>Client stakes</h2>
-<p class="sub">Every COCOON client contract of the current and the earlier proxy, from chain data. A forced refund pays at most the proxy's own stake; a closed contract counts as refunded only if the proxy's payouts to its owner covered the stake. Owners are not shown. Check your own contract: <code>scripts/client-stake-check</code> in the <a href="https://github.com/miinimal/cocoon/blob/testnet/scripts/client-stake-check" target="_blank" rel="noopener">testnet fork</a>.</p>
+<p class="sub">Every COCOON client contract of the current and the earlier proxy, from chain data. A forced refund pays at most the proxy's own stake; a closed contract counts as refunded only if the proxy's payouts to its owner covered the stake. Owners are not shown. Check your own contract, read-only, no keys: <code>https://minimalcult.org/v1/cocoon/stake/&lt;client contract address&gt;</code> (or <a href="https://github.com/miinimal/cocoon/blob/testnet/scripts/client-stake-check" target="_blank" rel="noopener">scripts/client-stake-check</a>). Background: <a href="https://github.com/TelegramMessenger/cocoon/issues/77" target="_blank" rel="noopener">cocoon#77</a>.</p>
 <div class="card" id="stakes"></div>
 
 <h2>Admin timeline (root contract)</h2>
